@@ -1,11 +1,16 @@
-from pubnub import Pubnub
+from pubnub.callbacks import SubscribeCallback
+from pubnub.pnconfiguration import PNConfiguration
+from pubnub.pubnub import PubNub
 import grovepi
 from grove_rgb_lcd import *
 
-pubnub = Pubnub(
-        publish_key = "pub-c-090357d1-f0ff-4d6f-8c22-4e792d4a19fc",
-        subscribe_key = "sub-c-28471b50-f917-11e5-8916-0619f8945a4f")
-channel = "pi-atthack-04162016";
+pnconf = PNConfiguration()
+pnconf.publish_key = "demo"
+pnconf.subscribe_key = "demo"
+pnconf.enable_subscribe = True
+
+pubnub = PubNub(pnconfig)
+channel = "sbda0_987654321"
 channel2 = "okButton"
 
 # Connect the Grove LED  to digital port D4
@@ -41,6 +46,22 @@ def setText(text):
         count += 1
         bus.write_byte_data(DISPLAY_TEXT_ADDR,0x40,ord(c))
 
+class MyListener(SubscribeCallback):
+    def status(self, pubnub, status):
+        print("status changed: %s" % status)
+
+    def message(self, pubnub, message):
+        grovepi.digitalWrite(buzzer,1)
+        setText(value)
+        if message == "red":
+                setRGB(255,0,0)
+        elif message == "green":
+                setRGB(0,255,0)
+        elif message == "green":
+                setRGB(0,0,255)
+
+    def presence(self, pubnub, presence):
+        pass
 
 def callback(message, channel):
         type = message['type']
@@ -79,10 +100,11 @@ def callbackInt(message, channel):
                 setText('ready')
                 setRGB(255,255,255)
 
-pubnub.subscribe(
-        channel,
-        callback = callback)
-pubnub.subscribe(
-        channel2,
-        callback = callbackInt)
+my_listener = MyListener()
+pubnub.add_listener(my_listener)
+pubnub.subscribe().channels(channel).execute()
+
+#pubnub.subscribe(
+#        channel2,
+#        callback = callbackInt)
 
